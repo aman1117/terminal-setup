@@ -1,0 +1,112 @@
+# Starship Configuration - Beautiful & Informative Prompt
+
+# Inserts a blank line between shell prompts
+add_newline = true
+
+# Timeout for commands executed by starship (in milliseconds)
+command_timeout = 1000
+
+# Format of the prompt
+format = """
+$username$hostname$directory$git_branch$git_status$git_state\
+$nodejs$rust$golang$python$java$docker_context\
+$cmd_duration$line_break$character"""
+
+# Right side of prompt
+right_format = """$time"""
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+[username]
+style_user = "bold cyan"
+style_root = "bold red"
+format = "[$user]($style) "
+disabled = false
+show_always = false
+
+[hostname]
+ssh_only = true
+format = "on [$hostname](bold purple) "
+
+[directory]
+truncation_length = 3
+truncate_to_repo = true
+style = "bold blue"
+format = "[$path]($style)[$read_only]($read_only_style) "
+read_only = " 🔒"
+
+[git_branch]
+symbol = " "
+style = "bold purple"
+format = "on [$symbol$branch]($style) "
+
+[git_status]
+format = '([\[$all_status$ahead_behind\]]($style) )'
+style = "bold yellow"
+conflicted = "🔥"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+stashed = "📦"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+
+[git_state]
+format = '[\($state( $progress_current of $progress_total)\)]($style) '
+cherry_pick = "[🍒 PICKING](bold red)"
+rebase = "[📐 REBASING](bold yellow)"
+merge = "[🔀 MERGING](bold purple)"
+
+[nodejs]
+symbol = " "
+style = "bold green"
+format = "[$symbol($version)]($style) "
+detect_files = ["package.json", ".node-version"]
+detect_folders = ["node_modules"]
+
+[rust]
+symbol = " "
+style = "bold red"
+format = "[$symbol($version)]($style) "
+
+[golang]
+symbol = " "
+style = "bold cyan"
+format = "[$symbol($version)]($style) "
+
+[python]
+symbol = " "
+style = "bold yellow"
+format = "[$symbol($version)]($style) "
+detect_files = ["requirements.txt", "pyproject.toml", "Pipfile", "setup.py"]
+
+[java]
+symbol = " "
+style = "bold red"
+format = "[$symbol($version)]($style) "
+
+[docker_context]
+symbol = " "
+style = "bold blue"
+format = "[$symbol$context]($style) "
+only_with_files = true
+
+[cmd_duration]
+min_time = 2000
+format = "took [$duration](bold yellow) "
+show_milliseconds = false
+
+[time]
+disabled = false
+format = "[$time]($style)"
+style = "bold dimmed white"
+time_format = "%H:%M"
+
+[package]
+disabled = true
