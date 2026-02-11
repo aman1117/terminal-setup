@@ -11,13 +11,26 @@
 # Keep profile resilient: don't let one optional tool break the whole shell
 $ErrorActionPreference = "Continue"
 
+# Detect if running inside PowerShell Editor Services (VS Code extension host)
+$_isEditorServices = ($host.Name -eq 'Visual Studio Code Host') -or
+                     ($null -ne $env:TERM_PROGRAM -and $env:TERM_PROGRAM -eq 'vscode' -and $host.Name -eq 'ConsoleHost' -and $null -ne $psEditor) -or
+                     ($host.Name -match 'PowerShell Editor Services')
+
 # ---------- PATH Setup ----------
-# Ensure cargo, go, and local bin are in PATH
+# Ensure cargo, go, local bin, and winget packages are in PATH
 $pathsToAdd = @(
     "$env:USERPROFILE\.cargo\bin",
     "$env:USERPROFILE\go-sdk\go\bin",
     "$env:USERPROFILE\.local\bin"
 )
+# Auto-discover winget-installed CLI tools
+$wingetPkgs = "$env:LOCALAPPDATA\Microsoft\WinGet\Packages"
+if (Test-Path $wingetPkgs) {
+    Get-ChildItem $wingetPkgs -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+        $exeDir = Get-ChildItem $_.FullName -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($exeDir) { $pathsToAdd += $exeDir.DirectoryName }
+    }
+}
 foreach ($p in $pathsToAdd) {
     if ((Test-Path $p) -and ($env:PATH -notlike "*$p*")) {
         $env:PATH = "$p;$env:PATH"
@@ -31,7 +44,7 @@ Import-Module Terminal-Icons -ErrorAction SilentlyContinue
 Import-Module PSFzf -ErrorAction SilentlyContinue
 
 # ---------- PSFzf Configuration ----------
-if (Get-Module PSFzf) {
+if ((Get-Module PSFzf) -and -not $_isEditorServices) {
     Set-PsFzfOption -PSReadlineChordProvider 'Ctrl+t' -PSReadlineChordReverseHistory 'Ctrl+r'
     Set-PSFzfOption -EnableAliasFuzzyEdit
     Set-PSFzfOption -EnableAliasFuzzySetLocation
@@ -49,7 +62,7 @@ if (Get-Module PSReadLine) {
     Set-PSReadLineKeyHandler -Key DownArrow -Function HistorySearchForward
 
     # Better history search with Ctrl+r using fzf (if installed)
-    if (Get-Command fzf -ErrorAction SilentlyContinue) {
+    if ((Get-Command fzf -ErrorAction SilentlyContinue) -and -not $_isEditorServices) {
         Set-PSReadLineKeyHandler -Chord "Ctrl+r" -ScriptBlock {
             $histPath = (Get-PSReadLineOption).HistorySavePath
             if (-not (Test-Path $histPath)) { return }
@@ -65,15 +78,16 @@ if (Get-Module PSReadLine) {
 }
 
 # ---------- zoxide (smart cd) ----------
-# Fix: zoxide init may return multiple lines; join to a single string before Invoke-Expression.
-if (Get-Command zoxide -ErrorAction SilentlyContinue) {
-    try {
-        (& zoxide init powershell) -join "`n" | Invoke-Expression
-    } catch {
-        Write-Warning "zoxide init failed: $($_.Exception.Message)"
+if (-not $_isEditorServices) {
+    if (Get-Command zoxide -ErrorAction SilentlyContinue) {
+        try {
+            (& zoxide init powershell) -join "`n" | Invoke-Expression
+        } catch {
+            Write-Warning "zoxide init failed: $($_.Exception.Message)"
+        }
+    } elseif (Get-Module z -ListAvailable) {
+        Import-Module z -ErrorAction SilentlyContinue
     }
-} elseif (Get-Module z -ListAvailable) {
-    Import-Module z -ErrorAction SilentlyContinue
 }
 
 # ---------- Better ls ----------
@@ -91,8 +105,9 @@ if (Get-Command eza -ErrorAction SilentlyContinue) {
 }
 
 # ---------- Better cat with bat ----------
+# Use 'bcat' instead of overriding 'cat' to avoid breaking PowerShell Editor Services
 if (Get-Command bat -ErrorAction SilentlyContinue) {
-    function cat { bat --style=auto $args }
+    function bcat { bat --style=auto $args }
     function catp { bat --plain $args }
 }
 
@@ -142,12 +157,13 @@ if (Get-Command fzf -ErrorAction SilentlyContinue) {
 }
 
 # ---------- Prompt (starship) ----------
-# Fix: same join pattern, and guard with try/catch.
-if (Get-Command starship -ErrorAction SilentlyContinue) {
-    try {
-        (& starship init powershell) -join "`n" | Invoke-Expression
-    } catch {
-        Write-Warning "starship init failed: $($_.Exception.Message)"
+if (-not $_isEditorServices) {
+    if (Get-Command starship -ErrorAction SilentlyContinue) {
+        try {
+            (& starship init powershell) -join "`n" | Invoke-Expression
+        } catch {
+            Write-Warning "starship init failed: $($_.Exception.Message)"
+        }
     }
 }
 
