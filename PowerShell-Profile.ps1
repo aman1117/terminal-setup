@@ -130,6 +130,7 @@ function gl  { git pull }
 function gp  { git push }
 function ga  { git add $args }
 function gaa { git add --all }
+Remove-Alias gc -Force -ErrorAction SilentlyContinue
 function gc  { git commit -m $args }
 function gca { git commit --amend }
 function gd  { git diff $args }
