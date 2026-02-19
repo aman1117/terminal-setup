@@ -125,6 +125,7 @@ if (Get-Command rg -ErrorAction SilentlyContinue) {
 # ---------- Git helpers ----------
 function gst { git status }
 function gco { param([string]$Branch) git checkout $Branch }
+Remove-Alias gl -Force -ErrorAction SilentlyContinue
 function gl  { git pull }
 function gp  { git push }
 function ga  { git add $args }
